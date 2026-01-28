@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}控制台{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h4 class="mb-4">
+        <i class="fas fa-tachometer-alt me-2"></i>我的账户
+    </h4>
+
+    <!-- 资产概览 -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="dashboard-card balance-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="mb-1 opacity-75">总资产</p>
+                        <div class="balance-amount">¥ {{ "%.2f"|format(total_balance) }}</div>
+                    </div>
+                    <i class="fas fa-wallet fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="dashboard-card account-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="mb-1 opacity-75">理财账户</p>
+                        <div class="stat-number">{{ accounts|length }}</div>
+                    </div>
+                    <i class="fas fa-piggy-bank fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="dashboard-card message-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="mb-1 opacity-75">未读消息</p>
+                        <div class="stat-number">{{ unread_msgs }}</div>
+                    </div>
+                    <i class="fas fa-envelope fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 我的账户列表 -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-wallet me-2"></i>理财账户</span>
+                    <a href="{{ url_for('accounts') }}" class="text-white text-decoration-none">
+                        查看全部 <i class="fas fa-angle-right"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if accounts %}
+                        {% for account in accounts %}
+                        <div class="d-flex justify-content-between align-items-center py-3 {% if not loop.last %}border-bottom{% endif %}">
+                            <div>
+                                <div class="fw-medium">{{ account.account_type }}</div>
+                                <small class="text-muted">{{ account.account_no }}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold text-primary">¥ {{ "%.2f"|format(account.balance) }}</div>
+                                <a href="{{ url_for('account_detail', account_id=account.id) }}" class="small">查看详情</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-center text-muted py-4">暂无理财账户</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- 快捷操作 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-bolt me-2"></i>快捷操作
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <a href="{{ url_for('profile') }}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-user d-block mb-1"></i>
+                                个人信息
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('cards') }}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-credit-card d-block mb-1"></i>
+                                银行卡
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{{ url_for('messages') }}" class="btn btn-outline-primary w-100 py-3">
+                                <i class="fas fa-envelope d-block mb-1"></i>
+                                消息中心
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-outline-secondary w-100 py-3" disabled>
+                                <i class="fas fa-exchange-alt d-block mb-1"></i>
+                                转账
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 安全提示 -->
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-shield-alt me-2"></i>安全提醒
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>账户状态正常</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>登录保护已开启</li>
+                        <li><i class="fas fa-exclamation-circle text-warning me-2"></i>建议绑定手机</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 漏洞提示 -->
+    <div class="vuln-hint">
+        <div class="vuln-hint-title"><i class="fas fa-bug me-2"></i>漏洞演示说明</div>
+        <p class="mb-2">本系统包含以下水平越权漏洞：</p>
+        <ol class="mb-0">
+            <li><code>/api/profile?user_id=X</code> - 查看任意用户个人信息</li>
+            <li><code>/api/account/X</code> - 查看任意用户账户余额和交易记录</li>
+            <li><code>/api/card/X</code> - 查看任意用户银行卡信息</li>
+            <li><code>/api/message/X</code> - 查看/删除任意用户消息</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}

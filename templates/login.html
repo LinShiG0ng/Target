@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}登录{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-title">
+                <i class="fas fa-coins fa-3x text-primary mb-3"></i>
+                <h2>欢迎回来</h2>
+                <p class="text-muted">登录您的云享财富账户</p>
+            </div>
+
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="mb-3">
+                    <label for="username" class="form-label">用户名</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                        <input type="text" class="form-control" id="username" name="username" placeholder="请输入用户名" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label">密码</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                        <input type="password" class="form-control" id="password" name="password" placeholder="请输入密码" required>
+                    </div>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="remember">
+                    <label class="form-check-label" for="remember">记住我</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2">
+                    <i class="fas fa-sign-in-alt me-2"></i>登录
+                </button>
+            </form>
+
+            <hr class="my-4">
+
+            <p class="text-center text-muted mb-0">
+                还没有账户？<a href="{{ url_for('register') }}">立即注册</a>
+            </p>
+
+            <div class="vuln-hint mt-4">
+                <div class="vuln-hint-title"><i class="fas fa-lightbulb me-2"></i>测试账号</div>
+                <p class="mb-1">账号1: <code>zhangsan</code> / <code>123456</code></p>
+                <p class="mb-1">账号2: <code>lisi</code> / <code>123456</code></p>
+                <p class="mb-0">账号3: <code>wangwu</code> / <code>123456</code></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}银行卡管理{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">首页</a></li>
+            <li class="breadcrumb-item active">银行卡管理</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">
+            <i class="fas fa-credit-card me-2"></i>银行卡管理
+        </h4>
+        <button class="btn btn-primary" disabled>
+            <i class="fas fa-plus me-2"></i>添加银行卡
+        </button>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div id="cards-container">
+                <div class="loading"></div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-flask me-2"></i>漏洞测试面板
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">通过修改 card_id 参数查看其他用户银行卡：</p>
+
+                    <div class="mb-3">
+                        <label class="form-label">选择目标银行卡ID</label>
+                        <div class="input-group">
+                            <input type="number" id="target-card-id" class="form-control" placeholder="输入银行卡ID" min="1" value="1">
+                            <button class="btn btn-danger" onclick="testCardVuln()">
+                                <i class="fas fa-bug me-2"></i>测试
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">快速测试</label>
+                        <div class="btn-group w-100">
+                            <button class="btn btn-outline-danger" onclick="viewCardDetail(1)">卡片1</button>
+                            <button class="btn btn-outline-danger" onclick="viewCardDetail(2)">卡片2</button>
+                            <button class="btn btn-outline-danger" onclick="viewCardDetail(3)">卡片3</button>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="mb-3">可泄露信息</h6>
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            <li><strong>完整银行卡号</strong></li>
+                            <li>持卡人真实姓名</li>
+                            <li>绑定的手机号码</li>
+                            <li>开户银行信息</li>
+                        </ul>
+                    </div>
+
+                    <h6 class="mb-3">潜在风险</h6>
+                    <ul class="text-muted small">
+                        <li>银行卡盗刷风险</li>
+                        <li>身份信息被冒用</li>
+                        <li>针对性钓鱼攻击</li>
+                        <li>社会工程学攻击</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function testCardVuln() {
+    const cardId = document.getElementById('target-card-id').value;
+    viewCardDetail(cardId);
+}
+</script>
+{% endblock %}

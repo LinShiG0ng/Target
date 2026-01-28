@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}个人信息{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">首页</a></li>
+            <li class="breadcrumb-item active">个人信息</li>
+        </ol>
+    </nav>
+
+    <h4 class="mb-4">
+        <i class="fas fa-user me-2"></i>个人信息
+    </h4>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div id="profile-container">
+                <div class="loading"></div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-flask me-2"></i>漏洞测试面板
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">通过修改 user_id 参数查看其他用户信息：</p>
+
+                    <div class="mb-3">
+                        <label class="form-label">选择目标用户ID</label>
+                        <div class="input-group">
+                            <input type="number" id="target-user-id" class="form-control" placeholder="输入用户ID" min="1" value="1">
+                            <button class="btn btn-danger" onclick="testVuln()">
+                                <i class="fas fa-bug me-2"></i>测试越权
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">快速测试</label>
+                        <div class="btn-group w-100">
+                            <button class="btn btn-outline-danger" onclick="loadProfile(1)">用户1</button>
+                            <button class="btn btn-outline-danger" onclick="loadProfile(2)">用户2</button>
+                            <button class="btn btn-outline-danger" onclick="loadProfile(3)">用户3</button>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="mb-3">漏洞原因分析</h6>
+                    <div class="alert alert-danger">
+                        <p class="mb-2"><strong>问题代码：</strong></p>
+                        <pre class="bg-dark text-light p-2 rounded mb-2"><code>user_id = request.args.get('user_id')
+user = User.query.get(user_id)  # 未验证归属</code></pre>
+                        <p class="mb-0">接口接受外部传入的 user_id 参数，未验证该ID是否属于当前登录用户。</p>
+                    </div>
+
+                    <h6 class="mb-3">正确写法</h6>
+                    <div class="alert alert-success">
+                        <pre class="bg-dark text-light p-2 rounded mb-2"><code># 方案1: 不接受外部参数
+user = current_user
+
+# 方案2: 验证归属关系
+if user_id != current_user.id:
+    return jsonify({'error': '无权访问'}), 403</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function testVuln() {
+    const userId = document.getElementById('target-user-id').value;
+    loadProfile(userId);
+}
+</script>
+{% endblock %}

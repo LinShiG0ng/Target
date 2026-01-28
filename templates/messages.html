@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}消息中心{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">首页</a></li>
+            <li class="breadcrumb-item active">消息中心</li>
+        </ol>
+    </nav>
+
+    <h4 class="mb-4">
+        <i class="fas fa-envelope me-2"></i>消息中心
+    </h4>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div id="messages-container">
+                <div class="loading"></div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-flask me-2"></i>漏洞测试面板
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">通过修改 message_id 参数查看/删除其他用户消息：</p>
+
+                    <div class="mb-3">
+                        <label class="form-label">选择目标消息ID</label>
+                        <div class="input-group">
+                            <input type="number" id="target-msg-id" class="form-control" placeholder="输入消息ID" min="1" value="1">
+                            <button class="btn btn-danger" onclick="testMsgVuln()">
+                                <i class="fas fa-eye me-2"></i>查看
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">快速测试</label>
+                        <div class="btn-group w-100">
+                            <button class="btn btn-outline-danger" onclick="viewMessage(1)">消息1</button>
+                            <button class="btn btn-outline-danger" onclick="viewMessage(2)">消息2</button>
+                            <button class="btn btn-outline-danger" onclick="viewMessage(3)">消息3</button>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="mb-3">漏洞类型</h6>
+                    <div class="alert alert-danger">
+                        <p class="mb-2"><strong>读取漏洞</strong></p>
+                        <code>GET /api/message/{id}</code>
+                        <p class="mt-2 mb-2"><strong>删除漏洞</strong></p>
+                        <code>DELETE /api/message/{id}</code>
+                    </div>
+
+                    <h6 class="mb-3">消息可能包含</h6>
+                    <ul class="text-muted small">
+                        <li>交易验证码</li>
+                        <li>账户变动通知</li>
+                        <li>安全警告信息</li>
+                        <li>密码重置链接</li>
+                        <li>敏感操作提醒</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <i class="fas fa-lightbulb me-2"></i>攻击场景
+                </div>
+                <div class="card-body">
+                    <ol class="small text-muted mb-0">
+                        <li class="mb-2">遍历消息ID获取敏感通知</li>
+                        <li class="mb-2">获取他人的交易验证码</li>
+                        <li class="mb-2">删除他人的安全警告消息</li>
+                        <li>配合其他漏洞进行组合攻击</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function testMsgVuln() {
+    const msgId = document.getElementById('target-msg-id').value;
+    viewMessage(msgId);
+}
+</script>
+{% endblock %}
