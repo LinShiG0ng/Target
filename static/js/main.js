@@ -450,17 +450,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 根据页面自动加载数据
     const path = window.location.pathname;
 
-    if (path === '/profile') {
-        // 检查URL参数
-        const urlParams = new URLSearchParams(window.location.search);
-        const userId = urlParams.get('user_id');
-        loadProfile(userId);
-    } else if (path.startsWith('/account/')) {
+    // 账户详情页仍需要异步加载（保留漏洞点）
+    if (path.startsWith('/account/')) {
         const accountId = path.split('/').pop();
         loadAccountDetail(accountId);
-    } else if (path === '/cards') {
-        loadCards();
-    } else if (path === '/messages') {
-        loadMessages();
     }
 });

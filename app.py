@@ -214,7 +214,7 @@ def dashboard():
 @login_required
 def profile():
     """个人信息页面"""
-    return render_template('profile.html')
+    return render_template('profile.html', user=current_user)
 
 
 @app.route('/accounts')
@@ -236,14 +236,17 @@ def account_detail(account_id):
 @login_required
 def cards():
     """银行卡管理页面"""
-    return render_template('cards.html')
+    user_cards = BankCard.query.filter_by(user_id=current_user.id).all()
+    return render_template('cards.html', cards=user_cards)
 
 
 @app.route('/messages')
 @login_required
 def messages():
     """消息中心页面"""
-    return render_template('messages.html')
+    user_messages = Message.query.filter_by(user_id=current_user.id)\
+                    .order_by(Message.created_at.desc()).all()
+    return render_template('messages.html', messages=user_messages)
 
 
 # ==================== API接口（包含水平越权漏洞） ====================

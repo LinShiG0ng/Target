@@ -17,9 +17,28 @@
 
     <div class="row">
         <div class="col-lg-8">
-            <div id="messages-container">
-                <div class="loading"></div>
+            {% if messages %}
+            <div class="card">
+                <div class="card-body p-0">
+                    {% for msg in messages %}
+                    <div class="message-item {{ '' if msg.is_read else 'unread' }}" onclick="viewMessage({{ msg.id }})">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="message-type {% if msg.msg_type == '系统通知' %}system{% elif msg.msg_type == '交易提醒' %}transaction{% elif msg.msg_type == '安全提醒' %}security{% else %}system{% endif %}">{{ msg.msg_type }}</span>
+                                <span class="message-title ms-2">{{ msg.title }}</span>
+                            </div>
+                            <small class="text-muted">{{ msg.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <p class="text-muted">暂无消息</p>
+            </div>
+            {% endif %}
         </div>
         <div class="col-lg-4">
             <div class="card">

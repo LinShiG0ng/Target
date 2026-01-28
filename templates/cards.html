@@ -22,9 +22,32 @@
 
     <div class="row">
         <div class="col-lg-8">
-            <div id="cards-container">
-                <div class="loading"></div>
+            {% if cards %}
+            <div class="row">
+                {% for card in cards %}
+                <div class="col-md-6 mb-4">
+                    <div class="bank-card {% if card.bank_name == '工商银行' %}card-icbc{% elif card.bank_name == '建设银行' %}card-ccb{% elif card.bank_name == '农业银行' %}card-abc{% elif card.bank_name == '中国银行' %}card-boc{% endif %}"
+                         onclick="viewCardDetail({{ card.id }})" style="cursor:pointer">
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-bold">{{ card.bank_name }}</span>
+                            <span>{{ card.card_type }}</span>
+                        </div>
+                        <div class="card-number">{{ card.card_no[-4:].rjust(card.card_no|length, '*') }}</div>
+                        <div class="card-info">
+                            <span>{{ card.holder_name }}</span>
+                            <span>点击查看详情</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
             </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
+                <p class="text-muted">您还没有绑定银行卡</p>
+                <button class="btn btn-primary" disabled><i class="fas fa-plus me-2"></i>添加银行卡</button>
+            </div>
+            {% endif %}
         </div>
         <div class="col-lg-4">
             <div class="card">
