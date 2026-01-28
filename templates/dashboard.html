@@ -127,17 +127,5 @@
             </div>
         </div>
     </div>
-
-    <!-- 漏洞提示 -->
-    <div class="vuln-hint">
-        <div class="vuln-hint-title"><i class="fas fa-bug me-2"></i>漏洞演示说明</div>
-        <p class="mb-2">本系统包含以下水平越权漏洞：</p>
-        <ol class="mb-0">
-            <li><code>/api/profile?user_id=X</code> - 查看任意用户个人信息</li>
-            <li><code>/api/account/X</code> - 查看任意用户账户余额和交易记录</li>
-            <li><code>/api/card/X</code> - 查看任意用户银行卡信息</li>
-            <li><code>/api/message/X</code> - 查看/删除任意用户消息</li>
-        </ol>
-    </div>
 </div>
 {% endblock %}

@@ -25,64 +25,37 @@
         <div class="col-lg-4">
             <div class="card">
                 <div class="card-header">
-                    <i class="fas fa-flask me-2"></i>漏洞测试面板
+                    <i class="fas fa-cog me-2"></i>账户操作
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">通过修改 account_id 参数查看其他用户账户：</p>
-
-                    <div class="mb-3">
-                        <label class="form-label">选择目标账户ID</label>
-                        <div class="input-group">
-                            <input type="number" id="target-account-id" class="form-control" placeholder="输入账户ID" min="1" value="1">
-                            <button class="btn btn-danger" onclick="testAccountVuln()">
-                                <i class="fas fa-bug me-2"></i>测试
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">快速测试</label>
-                        <div class="btn-group w-100">
-                            <button class="btn btn-outline-danger" onclick="loadAccountDetail(1)">账户1</button>
-                            <button class="btn btn-outline-danger" onclick="loadAccountDetail(2)">账户2</button>
-                            <button class="btn btn-outline-danger" onclick="loadAccountDetail(3)">账户3</button>
-                        </div>
-                    </div>
-
-                    <hr>
-
-                    <h6 class="mb-3">危害说明</h6>
-                    <div class="alert alert-warning">
-                        <ul class="mb-0">
-                            <li>可查看他人账户余额</li>
-                            <li>可查看他人交易记录</li>
-                            <li>可获取交易对手信息</li>
-                            <li>为后续攻击提供信息</li>
-                        </ul>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" disabled>
+                            <i class="fas fa-plus me-2"></i>充值
+                        </button>
+                        <button class="btn btn-outline-primary" disabled>
+                            <i class="fas fa-minus me-2"></i>提现
+                        </button>
+                        <button class="btn btn-outline-primary" disabled>
+                            <i class="fas fa-exchange-alt me-2"></i>转账
+                        </button>
                     </div>
                 </div>
             </div>
 
             <div class="card mt-4">
-                <div class="card-header bg-success text-white">
-                    <i class="fas fa-shield-alt me-2"></i>安全接口对比
+                <div class="card-header">
+                    <i class="fas fa-info-circle me-2"></i>账户说明
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">安全版本的API会验证账户归属：</p>
-                    <code>/api/secure/account/{{ account_id }}</code>
-                    <p class="mt-2 mb-0 small text-muted">访问非自己的账户将返回403错误</p>
+                    <ul class="small text-muted mb-0">
+                        <li class="mb-2">活期账户支持随时存取</li>
+                        <li class="mb-2">定期理财收益更高</li>
+                        <li class="mb-2">基金账户支持多种投资</li>
+                        <li>所有资金由银行托管</li>
+                    </ul>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-function testAccountVuln() {
-    const accountId = document.getElementById('target-account-id').value;
-    loadAccountDetail(accountId);
-}
-</script>
 {% endblock %}

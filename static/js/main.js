@@ -79,15 +79,6 @@ function displayProfile(data) {
                 <div class="info-value">${data.created_at}</div>
             </div>
         </div>
-
-        <div class="vuln-hint mt-4">
-            <div class="vuln-hint-title"><i class="fas fa-bug me-2"></i>漏洞演示提示</div>
-            <p class="mb-2">当前查看的用户ID: <strong>${data.id}</strong></p>
-            <p class="mb-2">尝试修改URL参数访问其他用户信息:</p>
-            <code>/api/profile?user_id=1</code><br>
-            <code>/api/profile?user_id=2</code><br>
-            <code>/api/profile?user_id=3</code>
-        </div>
     `;
 }
 
@@ -153,15 +144,6 @@ function displayAccountDetail(data) {
                 ${transactionHtml}
             </div>
         </div>
-
-        <div class="vuln-hint mt-4">
-            <div class="vuln-hint-title"><i class="fas fa-bug me-2"></i>漏洞演示提示</div>
-            <p class="mb-2">当前查看的账户ID: <strong>${data.id}</strong></p>
-            <p class="mb-2">尝试遍历账户ID查看其他用户账户:</p>
-            <code>/api/account/1</code><br>
-            <code>/api/account/2</code><br>
-            <code>/api/account/3</code>
-        </div>
     `;
 }
 
@@ -217,14 +199,6 @@ function displayCards(cards) {
                     </div>
                 </div>
             `).join('')}
-        </div>
-
-        <div class="vuln-hint mt-4">
-            <div class="vuln-hint-title"><i class="fas fa-bug me-2"></i>漏洞演示提示</div>
-            <p class="mb-2">点击银行卡可查看详情，尝试遍历card_id查看其他用户银行卡:</p>
-            <code>/api/card/1</code><br>
-            <code>/api/card/2</code><br>
-            <code>/api/card/3</code>
         </div>
     `;
 }
@@ -283,11 +257,6 @@ function showCardModal(data) {
                         <div class="info-item">
                             <div class="info-label">绑定时间</div>
                             <div class="info-value">${data.created_at}</div>
-                        </div>
-
-                        <div class="vuln-hint mt-3">
-                            <div class="vuln-hint-title"><i class="fas fa-bug me-2"></i>敏感信息泄露</div>
-                            <p class="mb-0">通过修改card_id可获取完整银行卡号和持卡人信息！</p>
                         </div>
                     </div>
                 </div>
@@ -349,14 +318,6 @@ function displayMessages(messages) {
                 `).join('')}
             </div>
         </div>
-
-        <div class="vuln-hint mt-4">
-            <div class="vuln-hint-title"><i class="fas fa-bug me-2"></i>漏洞演示提示</div>
-            <p class="mb-2">点击消息可查看详情，尝试遍历message_id查看其他用户消息:</p>
-            <code>/api/message/1</code><br>
-            <code>/api/message/2</code><br>
-            <code>/api/message/3</code>
-        </div>
     `;
 }
 
@@ -404,11 +365,6 @@ function showMessageModal(data) {
                         <p>${data.content}</p>
                         <hr>
                         <small class="text-muted">发送时间: ${data.created_at}</small>
-
-                        <div class="vuln-hint mt-3">
-                            <div class="vuln-hint-title"><i class="fas fa-bug me-2"></i>信息泄露</div>
-                            <p class="mb-0">消息ID: ${data.id}，可遍历查看其他用户消息</p>
-                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-danger" onclick="deleteMessage(${data.id})">
