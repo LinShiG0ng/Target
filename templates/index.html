@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}首页{% endblock %}
+
+{% block content %}
+<!-- 首页Banner -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="hero-title">安全理财 智享未来</h1>
+                <p class="hero-subtitle">云享财富为您提供专业、安全、便捷的互联网理财服务，让您的财富稳健增值。</p>
+                <div class="d-flex gap-3">
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg">
+                        <i class="fas fa-tachometer-alt me-2"></i>进入控制台
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('register') }}" class="btn btn-light btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>立即注册
+                    </a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>登录账户
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6 text-center mt-5 mt-lg-0">
+                <i class="fas fa-chart-line" style="font-size: 200px; opacity: 0.2;"></i>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 产品特色 -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">为什么选择云享财富</h2>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h5>资金安全</h5>
+                    <p class="text-muted">银行级别资金托管，多重安全防护体系，确保您的每一分钱都安全无忧。</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #34a853, #4caf50);">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <h5>稳健收益</h5>
+                    <p class="text-muted">专业投研团队，科学资产配置，为您提供稳定可靠的投资回报。</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card feature-card">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #fbbc04, #ff9800);">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h5>便捷服务</h5>
+                    <p class="text-muted">7x24小时在线服务，随时随地管理您的资产，理财从未如此简单。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 数据展示 -->
+<section class="py-5 bg-white">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3 col-6 mb-4">
+                <h2 class="text-primary mb-0">1000万+</h2>
+                <p class="text-muted">注册用户</p>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <h2 class="text-primary mb-0">500亿+</h2>
+                <p class="text-muted">累计交易额</p>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <h2 class="text-primary mb-0">8.5%</h2>
+                <p class="text-muted">平均年化收益</p>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <h2 class="text-primary mb-0">0</h2>
+                <p class="text-muted">安全事故</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

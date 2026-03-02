@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}银行卡管理{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">首页</a></li>
+            <li class="breadcrumb-item active">银行卡管理</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">
+            <i class="fas fa-credit-card me-2"></i>银行卡管理
+        </h4>
+        <button class="btn btn-primary" disabled>
+            <i class="fas fa-plus me-2"></i>添加银行卡
+        </button>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            {% if cards %}
+            <div class="row">
+                {% for card in cards %}
+                <div class="col-md-6 mb-4">
+                    <div class="bank-card {% if card.bank_name == '工商银行' %}card-icbc{% elif card.bank_name == '建设银行' %}card-ccb{% elif card.bank_name == '农业银行' %}card-abc{% elif card.bank_name == '中国银行' %}card-boc{% endif %}"
+                         onclick="viewCardDetail({{ card.id }})" style="cursor:pointer">
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-bold">{{ card.bank_name }}</span>
+                            <span>{{ card.card_type }}</span>
+                        </div>
+                        <div class="card-number">{{ card.card_no[-4:].rjust(card.card_no|length, '*') }}</div>
+                        <div class="card-info">
+                            <span>{{ card.holder_name }}</span>
+                            <span>点击查看详情</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
+                <p class="text-muted">您还没有绑定银行卡</p>
+                <button class="btn btn-primary" disabled><i class="fas fa-plus me-2"></i>添加银行卡</button>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-shield-alt me-2"></i>安全须知
+                </div>
+                <div class="card-body">
+                    <ul class="small text-muted mb-0">
+                        <li class="mb-2">仅支持绑定本人名下银行卡</li>
+                        <li class="mb-2">请确保银行预留手机号正确</li>
+                        <li class="mb-2">绑定后可用于充值提现</li>
+                        <li>如有疑问请联系客服</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <i class="fas fa-university me-2"></i>支持的银行
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-6"><span class="badge bg-danger w-100 py-2">工商银行</span></div>
+                        <div class="col-6"><span class="badge bg-primary w-100 py-2">建设银行</span></div>
+                        <div class="col-6"><span class="badge bg-success w-100 py-2">农业银行</span></div>
+                        <div class="col-6"><span class="badge bg-info w-100 py-2">中国银行</span></div>
+                        <div class="col-6"><span class="badge bg-warning w-100 py-2">招商银行</span></div>
+                        <div class="col-6"><span class="badge bg-secondary w-100 py-2">交通银行</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

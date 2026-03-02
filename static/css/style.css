@@ -1,0 +1,441 @@
+/* 云享财富 - 理财平台样式 */
+
+:root {
+    --primary-color: #1a73e8;
+    --primary-dark: #1557b0;
+    --secondary-color: #34a853;
+    --warning-color: #fbbc04;
+    --danger-color: #ea4335;
+    --dark-color: #202124;
+    --light-bg: #f8f9fa;
+    --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--light-bg);
+    padding-top: 56px;
+}
+
+/* 导航栏 */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.3rem;
+}
+
+/* 主内容区 */
+.main-content {
+    min-height: calc(100vh - 200px);
+    padding: 20px 0;
+}
+
+/* 卡片样式 */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    border-radius: 12px 12px 0 0 !important;
+    font-weight: 500;
+}
+
+/* 仪表盘 */
+.dashboard-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 24px;
+}
+
+.dashboard-card.balance-card {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.dashboard-card.account-card {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.dashboard-card.message-card {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.balance-amount {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+.stat-number {
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+/* 表格样式 */
+.table-custom {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.table-custom thead {
+    background: var(--light-bg);
+}
+
+.table-custom th {
+    font-weight: 600;
+    color: #5f6368;
+    border: none;
+}
+
+.table-custom td {
+    vertical-align: middle;
+}
+
+/* 账户卡片 */
+.account-card {
+    background: linear-gradient(135deg, #1a73e8, #4285f4);
+    color: white;
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.account-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+}
+
+.account-card .account-no {
+    font-family: 'Courier New', monospace;
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+}
+
+.account-card .balance {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* 银行卡样式 */
+.bank-card {
+    background: linear-gradient(135deg, #2c3e50, #4ca1af);
+    color: white;
+    border-radius: 16px;
+    padding: 24px;
+    min-height: 180px;
+    position: relative;
+}
+
+.bank-card.card-icbc {
+    background: linear-gradient(135deg, #c0392b, #e74c3c);
+}
+
+.bank-card.card-ccb {
+    background: linear-gradient(135deg, #2980b9, #3498db);
+}
+
+.bank-card.card-abc {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+}
+
+.bank-card.card-boc {
+    background: linear-gradient(135deg, #8e44ad, #9b59b6);
+}
+
+.bank-card .card-number {
+    font-family: 'Courier New', monospace;
+    font-size: 1.3rem;
+    letter-spacing: 3px;
+    margin: 20px 0;
+}
+
+.bank-card .card-info {
+    display: flex;
+    justify-content: space-between;
+}
+
+/* 消息列表 */
+.message-item {
+    padding: 16px;
+    border-bottom: 1px solid #e8eaed;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.message-item:hover {
+    background: var(--light-bg);
+}
+
+.message-item.unread {
+    background: #e8f0fe;
+}
+
+.message-item.unread .message-title {
+    font-weight: 600;
+}
+
+.message-type {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.message-type.system {
+    background: #e8f0fe;
+    color: var(--primary-color);
+}
+
+.message-type.transaction {
+    background: #e6f4ea;
+    color: var(--secondary-color);
+}
+
+.message-type.security {
+    background: #fce8e6;
+    color: var(--danger-color);
+}
+
+/* 交易记录 */
+.transaction-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #e8eaed;
+}
+
+.transaction-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+}
+
+.transaction-icon.income {
+    background: #e6f4ea;
+    color: var(--secondary-color);
+}
+
+.transaction-icon.expense {
+    background: #fce8e6;
+    color: var(--danger-color);
+}
+
+.transaction-amount {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.transaction-amount.positive {
+    color: var(--secondary-color);
+}
+
+.transaction-amount.negative {
+    color: var(--danger-color);
+}
+
+/* 个人信息 */
+.profile-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+}
+
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2.5rem;
+    margin: 0 auto 16px;
+}
+
+.info-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #e8eaed;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    color: #5f6368;
+    font-size: 0.875rem;
+}
+
+.info-value {
+    font-weight: 500;
+    color: var(--dark-color);
+}
+
+/* 首页样式 */
+.hero-section {
+    background: linear-gradient(135deg, #1a73e8 0%, #4285f4 50%, #34a853 100%);
+    color: white;
+    padding: 100px 0;
+    margin-top: -20px;
+}
+
+.hero-title {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+}
+
+.hero-subtitle {
+    font-size: 1.25rem;
+    opacity: 0.9;
+    margin-bottom: 32px;
+}
+
+.feature-card {
+    text-align: center;
+    padding: 32px 24px;
+}
+
+.feature-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    color: white;
+    font-size: 2rem;
+}
+
+/* 表单样式 */
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(26, 115, 232, 0.25);
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+
+/* 登录页面 */
+.auth-container {
+    max-width: 420px;
+    margin: 60px auto;
+}
+
+.auth-card {
+    background: white;
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.auth-title {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.auth-title h2 {
+    font-weight: 600;
+    color: var(--dark-color);
+}
+
+/* 页脚 */
+.footer {
+    margin-top: auto;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .hero-title {
+        font-size: 2rem;
+    }
+
+    .balance-amount {
+        font-size: 1.8rem;
+    }
+
+    .bank-card .card-number {
+        font-size: 1rem;
+        letter-spacing: 1px;
+    }
+}
+
+/* 加载动画 */
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+}
+
+.loading::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--light-bg);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 安全提示 */
+.security-notice {
+    background: #fff3e0;
+    border-left: 4px solid #ff9800;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 20px;
+}
+
+/* 漏洞演示提示 */
+.vuln-hint {
+    background: #fce8e6;
+    border: 1px dashed #ea4335;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+}
+
+.vuln-hint-title {
+    color: #ea4335;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
