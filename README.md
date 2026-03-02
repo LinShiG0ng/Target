@@ -6,6 +6,20 @@
 
 > **警告**：本系统仅用于安全教育和授权渗透测试，请勿用于非法用途！
 
+## 分支说明（便于 GitHub 合并）
+
+最近一轮新增演示功能（`/api/user/search`、`/echo`、`/api/noise`，以及前端搜索/首页噪声请求）当前在分支：`work`。
+
+如果你在 GitHub 上看不到这些改动，请确认 PR 的来源分支选择的是 `work`。
+
+常用命令：
+
+```bash
+git branch
+git checkout work
+git push origin work
+```
+
 ## 什么是水平越权漏洞？
 
 水平越权（Horizontal Privilege Escalation）是指在同一权限级别下，用户可以访问或操作其他用户的资源。这通常发生在应用程序仅通过用户提交的资源ID来获取数据，而没有验证该资源是否属于当前登录用户。
