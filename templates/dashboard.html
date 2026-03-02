@@ -112,6 +112,24 @@
                 </div>
             </div>
 
+
+            <!-- 用户搜索（教学演示） -->
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <i class="fas fa-bug me-2"></i>用户搜索（漏洞演示）
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">该功能会调用 <code>/api/user/search</code>，便于使用抓包工具测试。</p>
+                    <form id="vuln-search-form" class="d-flex gap-2 mb-3">
+                        <input id="vuln-search-keyword" type="text" class="form-control" placeholder="输入关键字，例如：admin">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-search me-1"></i>搜索
+                        </button>
+                    </form>
+                    <div id="vuln-search-result" class="small text-muted">暂无搜索结果</div>
+                </div>
+            </div>
+
             <!-- 安全提示 -->
             <div class="card">
                 <div class="card-header bg-warning text-dark">

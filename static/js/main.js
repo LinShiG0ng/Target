@@ -445,10 +445,73 @@ function createToastContainer() {
     return container;
 }
 
+
+// 用户搜索（教学演示：用于触发 /api/user/search 请求）
+async function runVulnUserSearch(keyword) {
+    const result = await apiRequest(`/api/user/search?keyword=${encodeURIComponent(keyword)}`);
+    return result;
+}
+
+function renderVulnSearchResult(result) {
+    const container = document.getElementById('vuln-search-result');
+    if (!container) return;
+
+    if (!result || result.code !== 200 || !Array.isArray(result.data) || result.data.length === 0) {
+        container.innerHTML = '<span class="text-muted">无匹配用户</span>';
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>用户名</th>
+                        <th>姓名</th>
+                        <th>手机号</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${result.data.map(user => `
+                        <tr>
+                            <td>${user.id}</td>
+                            <td>${user.username}</td>
+                            <td>${user.real_name}</td>
+                            <td>${user.phone}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function initVulnSearchForm() {
+    const form = document.getElementById('vuln-search-form');
+    if (!form) return;
+
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const keywordInput = document.getElementById('vuln-search-keyword');
+        const keyword = keywordInput ? keywordInput.value : '';
+
+        try {
+            const result = await runVulnUserSearch(keyword);
+            renderVulnSearchResult(result);
+        } catch (error) {
+            showError('搜索失败');
+        }
+    });
+}
+
 // 页面初始化
 document.addEventListener('DOMContentLoaded', function() {
     // 根据页面自动加载数据
     const path = window.location.pathname;
+
+    // 初始化搜索演示表单（便于前端触发并抓包）
+    initVulnSearchForm();
 
     // 账户详情页仍需要异步加载（保留漏洞点）
     if (path.startsWith('/account/')) {
