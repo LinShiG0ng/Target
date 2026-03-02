@@ -14,6 +14,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import random
 import os
+from sqlalchemy import text
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yxcf-secret-key-2024-do-not-use-in-production'
@@ -250,6 +251,47 @@ def messages():
 
 
 # ==================== API接口（包含水平越权漏洞） ====================
+
+@app.route('/api/user/search', methods=['GET'])
+@login_required
+def api_user_search():
+    """
+    【漏洞点8】用户搜索接口（SQL注入）
+    漏洞：使用字符串拼接构造SQL，未做参数化查询
+    攻击者可通过keyword参数注入任意SQL片段
+    """
+    keyword = request.args.get('keyword', '')
+
+    # 【漏洞】直接拼接SQL语句
+    raw_sql = f"""
+        SELECT id, username, real_name, phone
+        FROM users
+        WHERE username LIKE '%{keyword}%'
+           OR real_name LIKE '%{keyword}%'
+        ORDER BY id DESC
+        LIMIT 20
+    """
+    result = db.session.execute(text(raw_sql))
+
+    return jsonify({
+        'code': 200,
+        'data': [{
+            'id': row.id,
+            'username': row.username,
+            'real_name': row.real_name,
+            'phone': row.phone
+        } for row in result]
+    })
+
+
+@app.route('/echo', methods=['GET'])
+def echo():
+    """
+    【漏洞点9】反射型XSS
+    漏洞：直接输出用户输入内容，未做任何过滤
+    """
+    content = request.args.get('content', '')
+    return f"<h2>系统回显：</h2>{content}"
 
 @app.route('/api/profile', methods=['GET'])
 @login_required
