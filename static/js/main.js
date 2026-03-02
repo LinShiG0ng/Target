@@ -506,35 +506,62 @@ function initVulnSearchForm() {
 }
 
 
-function generateHomeNoisePayload(index) {
-    return {
-        packet_id: `pkt-${Date.now()}-${index}`,
-        event: ['page_view', 'scroll', 'click', 'hover', 'heartbeat'][index % 5],
-        path: window.location.pathname,
-        referrer: document.referrer || 'direct',
-        user_agent: navigator.userAgent,
-        ts: new Date().toISOString(),
-        meta: {
-            width: window.innerWidth,
-            height: window.innerHeight,
-            language: navigator.language,
-            random: Math.random().toString(36).slice(2)
-        }
-    };
-}
+// 首页模拟接口列表，每个接口对应不同的请求方式和载荷
+const HOME_MOCK_ENDPOINTS = [
+    { url: '/api/home/banner',        method: 'GET',  body: null },
+    { url: '/api/home/announcements', method: 'GET',  body: null },
+    { url: '/api/home/products',      method: 'GET',  body: null },
+    { url: '/api/home/market',        method: 'GET',  body: null },
+    { url: '/api/home/stats',         method: 'GET',  body: null },
+    { url: '/api/home/recommend',     method: 'GET',  body: null },
+    { url: '/api/home/activities',    method: 'GET',  body: null },
+    { url: '/api/home/news',          method: 'GET',  body: null },
+    { url: '/api/home/popular',       method: 'GET',  body: null },
+    { url: '/api/config/client',      method: 'GET',  body: null },
+    {
+        url: '/api/track/event', method: 'POST',
+        body: () => ({
+            event_type: ['page_view', 'scroll', 'click', 'hover', 'heartbeat'][Math.floor(Math.random() * 5)],
+            path: window.location.pathname,
+            referrer: document.referrer || 'direct',
+            ts: new Date().toISOString(),
+            session_id: Math.random().toString(36).slice(2),
+            meta: { width: window.innerWidth, height: window.innerHeight, language: navigator.language }
+        })
+    },
+    {
+        url: '/api/track/pv', method: 'POST',
+        body: () => ({
+            path: window.location.pathname,
+            title: document.title,
+            referrer: document.referrer || 'direct',
+            ts: new Date().toISOString(),
+            uid: Math.random().toString(36).slice(2)
+        })
+    },
+    { url: '/api/noise', method: 'GET',  body: null },
+    {
+        url: '/api/noise', method: 'POST',
+        body: () => ({
+            packet_id: `pkt-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            event: 'heartbeat',
+            path: window.location.pathname,
+            ts: new Date().toISOString()
+        })
+    },
+];
 
 function sendHomeNoiseTraffic() {
     const totalPackets = 80;
 
     for (let i = 0; i < totalPackets; i++) {
-        const payload = generateHomeNoisePayload(i);
+        const endpoint = HOME_MOCK_ENDPOINTS[i % HOME_MOCK_ENDPOINTS.length];
+        const bodyData = typeof endpoint.body === 'function' ? endpoint.body() : endpoint.body;
 
-        fetch('/api/noise', {
-            method: i % 3 === 0 ? 'GET' : 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: i % 3 === 0 ? undefined : JSON.stringify(payload)
+        fetch(endpoint.url, {
+            method: endpoint.method,
+            headers: { 'Content-Type': 'application/json' },
+            body: bodyData ? JSON.stringify(bodyData) : undefined
         }).catch(() => {
             // 噪声流量无需处理错误
         });
