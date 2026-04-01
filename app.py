@@ -130,18 +130,16 @@ def login():
         password = request.form.get('password')
 
         row = db.session.execute(
-            text(f"SELECT id FROM users WHERE username = '{username}'")
+            text(f"SELECT id FROM users WHERE username = '{username}' AND password_hash = '{password}'")
         ).fetchone()
-        user = User.query.get(row[0]) if row else None
 
-        if not user:
-            flash('账户不存在', 'error')
-        elif check_password_hash(user.password_hash, password):
+        if row:
+            user = User.query.get(row[0])
             login_user(user)
             flash('登录成功，欢迎回来！', 'success')
             return redirect(url_for('dashboard'))
         else:
-            flash('密码错误', 'error')
+            flash('用户名或密码错误', 'error')
 
     return render_template('login.html')
 
