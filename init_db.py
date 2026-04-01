@@ -73,7 +73,7 @@ def init_database():
         for data in users_data:
             user = User(
                 username=data['username'],
-                password_hash=generate_password_hash(data['password']),
+                password_hash=data['password'],
                 real_name=data['real_name'],
                 id_card=data['id_card'],
                 phone=data['phone'],

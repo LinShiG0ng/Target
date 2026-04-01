@@ -163,7 +163,7 @@ def register():
 
         user = User(
             username=username,
-            password_hash=generate_password_hash(password),
+            password_hash=password,
             real_name=real_name,
             id_card=id_card,
             phone=phone
