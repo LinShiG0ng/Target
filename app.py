@@ -134,12 +134,14 @@ def login():
         ).fetchone()
         user = User.query.get(row[0]) if row else None
 
-        if user and check_password_hash(user.password_hash, password):
+        if not user:
+            flash('账户不存在', 'error')
+        elif check_password_hash(user.password_hash, password):
             login_user(user)
             flash('登录成功，欢迎回来！', 'success')
             return redirect(url_for('dashboard'))
         else:
-            flash('用户名或密码错误', 'error')
+            flash('密码错误', 'error')
 
     return render_template('login.html')
 

