@@ -129,7 +129,11 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
 
-        user = User.query.filter_by(username=username).first()
+        row = db.session.execute(
+            text(f"SELECT id FROM users WHERE username = '{username}'")
+        ).fetchone()
+        user = User.query.get(row[0]) if row else None
+
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
             flash('登录成功，欢迎回来！', 'success')
@@ -252,78 +256,6 @@ def messages():
 
 # ==================== API接口（包含水平越权漏洞） ====================
 
-@app.route('/api/user/search', methods=['GET'])
-@login_required
-def api_user_search():
-    """
-    【漏洞点8】用户搜索接口（SQL注入）
-    漏洞：使用字符串拼接构造SQL，未做参数化查询
-    攻击者可通过keyword参数注入任意SQL片段
-    """
-    keyword = request.args.get('keyword', '')
-
-    # 【漏洞】直接拼接SQL语句
-    raw_sql = f"""
-        SELECT id, username, real_name, phone
-        FROM users
-        WHERE username LIKE '%{keyword}%'
-           OR real_name LIKE '%{keyword}%'
-        ORDER BY id DESC
-        LIMIT 20
-    """
-    result = db.session.execute(text(raw_sql))
-
-    return jsonify({
-        'code': 200,
-        'data': [{
-            'id': row.id,
-            'username': row.username,
-            'real_name': row.real_name,
-            'phone': row.phone
-        } for row in result]
-    })
-
-
-@app.route('/api/transactions', methods=['GET'])
-@login_required
-def api_get_transactions():
-    """
-    【漏洞点10】交易记录查询接口（数字型SQL注入）
-    漏洞：account_id参数直接拼接进SQL语句，未做任何过滤或参数化处理
-    数字型注入无需绕过引号，可直接使用 sqlmap 检测和利用
-    利用示例：/api/transactions?account_id=1 AND 1=1--
-    """
-    account_id = request.args.get('account_id', '')
-
-    if not account_id:
-        return jsonify({'code': 400, 'msg': '缺少account_id参数'}), 400
-
-    # 【漏洞】数字型SQL注入：直接将用户输入拼接进SQL，未做参数化处理
-    raw_sql = (
-        f"SELECT id, trans_type, amount, balance_after, description, created_at "
-        f"FROM transactions WHERE account_id = {account_id} "
-        f"ORDER BY created_at DESC LIMIT 20"
-    )
-
-    try:
-        result = db.session.execute(text(raw_sql))
-        rows = result.fetchall()
-        return jsonify({
-            'code': 200,
-            'data': [{
-                'id': row[0],
-                'trans_type': row[1],
-                'amount': row[2],
-                'balance_after': row[3],
-                'description': row[4],
-                'created_at': str(row[5])
-            } for row in rows]
-        })
-    except Exception as e:
-        # 【漏洞】将数据库报错信息直接返回，辅助攻击者进行报错注入
-        return jsonify({'code': 500, 'msg': f'查询错误: {str(e)}'}), 500
-
-
 @app.route('/echo', methods=['GET'])
 def echo():
     """
@@ -407,9 +339,33 @@ def api_get_account(account_id):
     if not account:
         return jsonify({'code': 404, 'msg': '账户不存在'}), 404
 
-    # 获取最近交易记录
-    transactions = Transaction.query.filter_by(account_id=account_id)\
-                    .order_by(Transaction.created_at.desc()).limit(20).all()
+    # 支持按备注关键字搜索交易记录
+    keyword = request.args.get('keyword', '')
+    if keyword:
+        trans_sql = f"""
+            SELECT id, trans_type, amount, balance_after, description, target_account, created_at
+            FROM transactions
+            WHERE account_id = {account_id}
+              AND (description LIKE '%{keyword}%' OR target_account LIKE '%{keyword}%')
+            ORDER BY created_at DESC
+            LIMIT 50
+        """
+        rows = db.session.execute(text(trans_sql)).fetchall()
+        transaction_list = [{
+            'id': r[0], 'trans_type': r[1], 'amount': r[2],
+            'balance_after': r[3], 'description': r[4],
+            'target_account': r[5],
+            'created_at': str(r[6])
+        } for r in rows]
+    else:
+        trans_objs = Transaction.query.filter_by(account_id=account_id)\
+                        .order_by(Transaction.created_at.desc()).limit(20).all()
+        transaction_list = [{
+            'id': t.id, 'trans_type': t.trans_type, 'amount': t.amount,
+            'balance_after': t.balance_after, 'description': t.description,
+            'target_account': t.target_account,
+            'created_at': t.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        } for t in trans_objs]
 
     return jsonify({
         'code': 200,
@@ -417,18 +373,10 @@ def api_get_account(account_id):
             'id': account.id,
             'account_no': account.account_no,
             'account_type': account.account_type,
-            'balance': account.balance,          # 敏感信息：余额
+            'balance': account.balance,
             'frozen_amount': account.frozen_amount,
             'created_at': account.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'transactions': [{
-                'id': t.id,
-                'trans_type': t.trans_type,
-                'amount': t.amount,
-                'balance_after': t.balance_after,
-                'description': t.description,
-                'target_account': t.target_account,
-                'created_at': t.created_at.strftime('%Y-%m-%d %H:%M:%S')
-            } for t in transactions]
+            'transactions': transaction_list
         }
     })
 
@@ -533,18 +481,34 @@ def api_delete_message(message_id):
 @app.route('/api/messages', methods=['GET'])
 @login_required
 def api_get_messages():
-    """获取当前用户的消息列表（安全接口）"""
-    messages = Message.query.filter_by(user_id=current_user.id)\
-                .order_by(Message.created_at.desc()).all()
+    """获取当前用户的消息列表，支持按消息类型筛选"""
+    msg_type = request.args.get('type', '')
+
+    if msg_type:
+        sql = f"""
+            SELECT id, title, msg_type, is_read, created_at
+            FROM messages
+            WHERE user_id = {current_user.id} AND msg_type = '{msg_type}'
+            ORDER BY created_at DESC
+        """
+    else:
+        sql = f"""
+            SELECT id, title, msg_type, is_read, created_at
+            FROM messages
+            WHERE user_id = {current_user.id}
+            ORDER BY created_at DESC
+        """
+
+    rows = db.session.execute(text(sql)).fetchall()
     return jsonify({
         'code': 200,
         'data': [{
-            'id': msg.id,
-            'title': msg.title,
-            'msg_type': msg.msg_type,
-            'is_read': msg.is_read,
-            'created_at': msg.created_at.strftime('%Y-%m-%d %H:%M:%S')
-        } for msg in messages]
+            'id': r[0],
+            'title': r[1],
+            'msg_type': r[2],
+            'is_read': r[3],
+            'created_at': str(r[4])
+        } for r in rows]
     })
 
 

